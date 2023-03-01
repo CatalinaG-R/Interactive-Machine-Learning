@@ -1,0 +1,63 @@
+import numpy as np
+import io
+from PIL import Image
+
+from flask import Flask, request, jsonify, render_template
+
+app = Flask(__name__)
+
+from tensorflow.keras.models import load_model
+model = load_model('model2.h5')  # loading the trained model
+
+
+
+
+
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    '''
+    For rendering results on HTML GUI
+    '''
+
+    # importing pickle module here to avoid circular import error
+    #import pickle
+    #model = pickle.load(open('model.pkl', 'rb'))  # loading the trained model
+
+    # retrieving values from form
+    #init_features = [float(x) for x in request.form.values()]
+    #final_features = [np.array(init_features)]
+
+    # loading the trained model
+    #model = pickle.load(open('model.pkl', 'rb'))
+
+    #prediction = model.predict(final_features)  # making prediction
+
+    #retrieve the uploaded image
+    file = request.files['image']
+    img = Image.open(io.BytesIO(file.read()))
+
+    #preprocess the image as necessary (resize, normalize, etc.)
+    img = img.resize((224, 224))
+    img_array = np.array(img)
+    from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+    img_array = preprocess_input(img_array)
+    img_array = np.expand_dims(img_array, axis=0)
+
+    #make predictions
+    prediction = model.predict(img_array)
+
+    #Convert the prediction result to a class label
+    class_labels = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30']
+    prediction_class = np.argmax(prediction)
+
+    return render_template('index.html',
+                           prediction_text='Predicted Genre: {}'.format(prediction_class))  # rendering the predicted result
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
